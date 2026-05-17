@@ -47,7 +47,8 @@ module Ollama
           history << assistant_message(msg, calls)
           calls.each do |tc|
             result = invoke_tool(tc)
-            history << { role: "tool", content: stringify(result), name: tc.name }
+            call_id = (tc.respond_to?(:id) ? tc.id : nil) || "call_#{tc.name}_#{tc.object_id}"
+            history << { role: "tool", content: stringify(result), name: tc.name, tool_call_id: call_id }
           end
         end
 
@@ -70,9 +71,14 @@ module Ollama
         {
           role: "assistant",
           content: msg.content.to_s,
-          tool_calls: calls.map { |tc| { function: { name: tc.name, arguments: tc.arguments } } }
+          tool_calls: calls.map do |tc|
+            call_id = (tc.respond_to?(:id) ? tc.id : nil) || "call_#{tc.name}_#{tc.object_id}"
+            { id: call_id, type: "function", function: { name: tc.name, arguments: tc.arguments } }
+          end
         }
       end
+
+
 
       def invoke_tool(tc)
         args = tc.arguments
