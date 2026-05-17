@@ -156,4 +156,24 @@ RSpec.describe Ollama::Agent do
       expect(observed.last[:content]).to eq("What is 2+2?")
     end
   end
+
+  describe Ollama::Agent::PlanAndSolvePlanner do
+    let(:client) { instance_double(Ollama::Client) }
+
+    it "prepends a Plan-and-Solve system prompt before running" do
+      msg = double(content: "ok", tool_calls: nil)
+      resp = instance_double(Ollama::Response, message: msg, done_reason: "stop")
+      observed = nil
+      expect(client).to receive(:chat) do |args|
+        observed = args[:messages]
+        resp
+      end
+
+      planner = described_class.new(client: client, model: "llama3", tools: Ollama::Agent::ToolRegistry.new)
+      planner.run(question: "How to bake a cake?")
+      expect(observed.first[:role]).to eq("system")
+      expect(observed.first[:content]).to match(/Plan|Execute|Final Answer/)
+      expect(observed.last[:content]).to eq("How to bake a cake?")
+    end
+  end
 end
