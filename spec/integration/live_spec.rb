@@ -4,7 +4,10 @@
 # Excluded by default; run with: INTEGRATION=1 bundle exec rspec spec/integration
 
 RSpec.describe Ollama::Agent::Executor, :integration do
-  before { |ex| IntegrationHelper.skip_unless_live!(ex, requires_chat: true) }
+  before do
+    reason = IntegrationHelper.skip_reason(requires_chat: true)
+    skip(reason) if reason
+  end
 
   let(:client) do
     Ollama::Client.new(config: Ollama::Config.new.tap { |c| c.base_url = IntegrationHelper::OLLAMA_URL })
